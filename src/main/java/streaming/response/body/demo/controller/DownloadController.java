@@ -28,26 +28,28 @@ public class DownloadController {
     public ResponseEntity<StreamingResponseBody> download() {
 
         // zipを作成しながらresponseを返す
-        StreamingResponseBody responseBody = out -> {
-            ZipOutputStream zipOutputStream = new ZipOutputStream(out);
+        // 自分用メモ
+        // 関数型インターフェースで一つしかメソッドないものははラムダ式で実装できる
+        StreamingResponseBody responseBody = outputStream -> {
 
-            try {
-                File f = new File("/Users/genki/Desktop/test.jpg");
-                InputStream inputStream = new FileInputStream(f);
+            File f = new File("/Users/genki/Desktop/test.jpg");
 
-                // パスをしてしてやると、
-                ZipEntry zipEntry = new ZipEntry("sample/" + f.getName());
-                zipOutputStream.putNextEntry(zipEntry);
+            try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
 
-                byte[] bytes=new byte[1024];
-                int length;
-                while ((length = inputStream.read(bytes)) >= 0) {
-                    zipOutputStream.write(bytes, 0, length);
+                for (int i = 0; i < 2; i++) {
+                    try (InputStream inputStream = new FileInputStream(f)) {
+                        // パスを指定すると、zipの中にファイルが含まれる
+                        ZipEntry zipEntry = new ZipEntry(i + "/" + f.getName());
+                        zipOutputStream.putNextEntry(zipEntry);
+
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ((length = inputStream.read(bytes)) >= 0) {
+                            zipOutputStream.write(bytes, 0, length);
+                        }
+                    }
                 }
-
-                inputStream.close();
-                zipOutputStream.close();
-            } catch (final IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         };
